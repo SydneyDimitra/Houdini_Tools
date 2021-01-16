@@ -342,3 +342,100 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         if item.has_children:
             self.load_children(item)
+
+
+class TreeView(QtGui.QTreeView):
+    def __init__(self):
+        """ """
+        super(TreeView, self).__init__()
+
+
+def get_folder_paths():
+    """Find Houdini and User directory paths.
+
+    Returns:
+        paths (list(str)): Full directory paths.
+    """
+    # Hardcode the paths for now
+    houdini_path = "/user_data/hou"
+    user_data_path = "/user_data/examples"
+    # Check if the paths exist.
+    paths = []
+    if os.path.isdir(houdini_path):
+        paths.append(houdini_path)
+    if os.path.isdir(user_data_path):
+        paths.append(user_data_path)
+    return paths
+
+
+def get_contents(directory):
+    if os.path.isfile(directory):
+        return ()
+    if not os.path.exists(directory):
+        return ()
+    contents = os.listdir(directory)
+    if not contents:
+        return ()
+
+    child_file_paths = []
+    child_dir_paths = []
+
+    for name in contents:
+        path = os.path.join(directory, name)
+        if os.path.isfile(path):
+            child_file_paths.append(path)
+        else:
+            child_dir_paths.append(path)
+
+    file_groups, independent_files = _get_file_groups(child_file_paths)
+
+    return child_dir_paths, file_groups, independent_files
+
+
+def _get_file_groups(file_paths):
+    """Group the different versions of the hip files.
+
+    Args:
+        file_paths (list(str)): List of the full file paths.
+
+    Returns:
+        tuple: (file_groups (dict), independent_files(list))
+            Dictionary maping the group name to a group of
+            file paths.
+            List of independent files that don't follow the version format,
+            and therefore don't create groups.
+    """
+    file_groups = {}
+    independent_files = []
+    pattern = "(?P<group_name>.*)_v[0-9]{3}.*hip"
+
+    for file_path in file_paths:
+        file_dir, file_name = os.path.split(file_path)
+        match = re.match(pattern, file_name)
+        if match:
+            file_groups.setdefault(
+                os.path.join(file_dir, match.group("group_name")), []
+            ).append(file_path)
+        elif file_path.endswith(".hip"):
+            independent_files.append(file_path)
+    independent_files = sorted(independent_files)
+    for key, values in file_groups.iteritems():
+        file_groups[key] = sorted(values)
+    return file_groups, independent_files
+
+
+def run_this_thing():
+    print " --- RUNNING ---"
+    app = QtGui.QApplication([])
+
+    view = TreeView()
+    model = TreeModel()
+    model.loadTree()
+    view.setModel(model)
+    view.show()
+
+    #window = thing()
+    #window.show()
+    app.exec_()
+
+tree = run_this_thing()
