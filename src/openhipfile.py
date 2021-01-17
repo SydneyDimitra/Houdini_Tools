@@ -21,6 +21,7 @@ class PathTreeItem(object):
         Args:
             file_path (str): The full path of the file.
             file_name (str): The name of the file.
+            parent
         """
         self.file_path = file_path
         self._file_name = file_name or os.path.basename(file_path)
@@ -54,13 +55,23 @@ class PathTreeItem(object):
     def is_loaded(self):
         return self._is_loaded
 
-    def set_loaded(self, loaded):
+    def set_loaded(self, loaded)
+        """Set is_loaded property.
+
+        Args:
+            loaded(bool) : Boolean input to set the property
+        """
         self._is_loaded = loaded
 
     def get_contents(self):
         self._contents = get_contents(self.file_path)
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
+        """
+        Args:
+            column(int): Column number.
+            role:
+        """
         if column == 0:
             if role == QtCore.Qt.DisplayRole:
                 return self._file_name
@@ -71,7 +82,10 @@ class PathTreeItem(object):
 
     def child(self, row):
         """Returns the child that corresponds to the specified row number
-        in the items list of child items
+        in the items list of child items.
+        
+        Args:
+            row(int): The row number.
         """
         if (row < 0 or row >= len(self._children)):
             return None
@@ -101,6 +115,11 @@ class FolderItem(PathTreeItem):
     """This class represents a folder tree item."""
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
+        """
+        Args:
+            column(int): Column number.
+            role:
+        """
         # Colouring the extra folders under the user folder for better
         # visibility (these include automated saved scene files that might
         # be handy)
@@ -136,6 +155,11 @@ class FileGroupItem(PathTreeItem):
         )[0]
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
+        """
+        Args:
+            column(int): Column number.
+            role:
+        """
         self.latest = self._get_latest()
         data = None
 
@@ -163,6 +187,7 @@ class FileItem(PathTreeItem):
 
         Args:
             file_path (str): Full path of file.
+            parent
         """
         super(FileItem, self).__init__(file_path, parent=parent)
         self.date = None
@@ -171,6 +196,11 @@ class FileItem(PathTreeItem):
         self._evaluate_creation_date()
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
+        """
+        Args:
+            column(int): Column number.
+            role:
+        """
         if role == QtCore.Qt.DisplayRole:
             if column == 2:
                 return self.time
@@ -212,7 +242,11 @@ class TreeModel(QtCore.QAbstractItemModel):
         self._items = {}
 
     def data(self, index, role):
-        """ """
+        """
+        Args:
+            index
+            role
+        """
         if not index.isValid():
             return QtCore.QVariant()
 
@@ -224,19 +258,33 @@ class TreeModel(QtCore.QAbstractItemModel):
         return item.data(index.column())
 
     def flags(self, index):
+        """
+        Args:
+            index
+        """
         if not index.isValid():
             return QtCore.Qt.NoItemFlags
 
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def headerData(self, section, orientation, role):
-        """Return the data that we stored on the root item"""
+        """Return the data that we stored on the root item.
+        Args:
+            section
+            orientation
+            role
+        """
         if (orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole):
             return self._rootItem.data(section)
         return QtCore.QVariant()
 
     def index(self, row, column, parent):
-        """ """
+        """
+        Args:
+            row
+            column
+            parent
+        """
         # if not hasIndex(row, column, parent):
         #     return QtQui.QModelIndex()
 
@@ -252,6 +300,10 @@ class TreeModel(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def parent(self, index):
+        """
+        Args:
+            index
+        """
         if not index.isValid():
             return QtCore.QModelIndex()
 
@@ -266,7 +318,10 @@ class TreeModel(QtCore.QAbstractItemModel):
     def rowCount(self, parent):
         """Return the number of child items for the TreeItem that corresponds
         to a given model index, or the number of top-level items if an invalid
-        index is specified:"""
+        index is specified.
+        Args:
+            parent
+        """
         parentItem = None
         if parent.column() > 0:
             return 0
