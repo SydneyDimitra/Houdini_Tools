@@ -478,19 +478,79 @@ def _get_file_groups(file_paths):
         file_groups[key] = sorted(values)
     return file_groups, independent_files
 
+class openHipFile(QtGui.QDialog):
+    """This class represents a QtGui QDialog object."""
+    def __init__(self, parent=None):
+        """Construct dnHipOpen object.
 
+        Create a custom Dialog box, based on the class QtGui.QDialog, adding
+        adds some extra functionality.
+
+        Args:
+            parent (QtGui.QDialog): parent dialog
+        """
+        super(openHipFile, self).__init__(parent)
+
+        self._setup_ui()
+
+    def _setup_ui(self):
+        # set up title including show and shot info
+        self.setWindowTitle(
+            QtGui.QApplication.translate(
+                "Open Hip File",
+                "Open or Import Hip File",
+                None,
+            )
+        )
+        # Create tree:
+        self._tree = TreeView()
+        self.model = TreeModel()
+        self._tree.setModel(self.model)
+        # Alternate color between lines
+        self._tree.setAlternatingRowColors(1)
+        # Set default minimum size for the widget
+        self._tree.setMinimumSize(800, 500)
+        column_sizes = {0: 300, 1: 300, 2: 150, 3: 200}
+        for column, size in column_sizes.items():
+            self._tree.setColumnWidth(column, size)
+        # Create mainn layout.
+        self._layout = QtGui.QVBoxLayout()
+        self._layout.addWidget(self._tree)
+        self.setLayout(self._layout)
+
+        # Add Load and Import button on the bottom of UI
+        self.load_button = QtGui.QPushButton("Load")
+        self.import_button = QtGui.QPushButton("Import")
+        # Create layout for the buttons.
+        button_layout = QtGui.QHBoxLayout()
+        button_layout.addWidget(self.load_button)
+        button_layout.addWidget(self.import_button)
+        # Add to main layout.
+        self._layout.addLayout(button_layout)
+        # Set up connections.
+        self._connect_widgets()
+
+        # Double click option.
+        self._tree.doubleClicked.connect(self.load_hip_file)
+
+    def _connect_widgets(self):
+        self.load_button.clicked.connect(self.load_hip_file)
+        self.import_button.clicked.connect(self.import_hip_file)
+
+        
 def run_this_thing():
     print " --- RUNNING ---"
     app = QtGui.QApplication([])
+    window = openHipFile()
+    window.show()
+    app.exec_()
 
-    view = TreeView()
-    model = TreeModel()
-    model.loadTree()
-    view.setModel(model)
-    view.show()
+#     view = TreeView()
+#     model = TreeModel()
+#     model.loadTree()
+#     view.setModel(model)
+#     view.show()
 
-    #window = thing()
-    #window.show()
     app.exec_()
 
 tree = run_this_thing()
