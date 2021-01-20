@@ -55,7 +55,7 @@ class PathTreeItem(object):
     def is_loaded(self):
         return self._is_loaded
 
-    def set_loaded(self, loaded)
+    def set_loaded(self, loaded):
         """Set is_loaded property.
 
         Args:
@@ -72,13 +72,9 @@ class PathTreeItem(object):
             column(int): Column number.
             role:
         """
-        if column == 0:
-            if role == QtCore.Qt.DisplayRole:
-                return self._file_name
-
-            elif role == QtCore.Qt.UserRole:
-                return self.file_path
-        return super(PathTreeItem, self).data(column, role)
+        if role == QtCore.Qt.DisplayRole:
+            return OUTLINER_COLUMN_ORDER[column]
+        return None
 
     def child(self, row):
         """Returns the child that corresponds to the specified row number
@@ -96,7 +92,7 @@ class PathTreeItem(object):
         return len(self._children)
 
     def columnCount(self):
-        return 1
+        return len(OUTLINER_COLUMN_ORDER)
 
     def row(self):
         """Return the items location within its parents list of items."""
@@ -123,10 +119,13 @@ class FolderItem(PathTreeItem):
         # Colouring the extra folders under the user folder for better
         # visibility (these include automated saved scene files that might
         # be handy)
-        if role == QtCore.Qt.ForegroundRole and column == 0:
-            if self.name.lower() in ["backup", "render"]:
-                return QtGui.QColor(255, 255, 102)
-        return super(FolderItem, self).data(column, role)
+        if column == 0:
+            if role == QtCore.Qt.DisplayRole:
+                return self.name
+            elif role == QtCore.Qt.ForegroundRole:
+                if self.name.lower() in ["backup", "render"]:
+                    return QtGui.QColor(255, 255, 52)
+        return None
 
 
 class FileGroupItem(PathTreeItem):
@@ -163,9 +162,9 @@ class FileGroupItem(PathTreeItem):
         self.latest = self._get_latest()
         data = None
 
-        if self.latest and role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole:
             column_data = [
-                None,
+                self.name,
                 self.latest.name,
                 self.latest.time,
                 self.latest.size
@@ -174,8 +173,6 @@ class FileGroupItem(PathTreeItem):
                 data = column_data[column]
             except IndexError:
                 pass
-        if data is None:
-            data = super(FileGroupItem, self).data(column, role)
         return data
 
 
@@ -202,13 +199,15 @@ class FileItem(PathTreeItem):
             role:
         """
         if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                return self.name
             if column == 2:
                 return self.time
             if column == 3:
                 return self.size
         elif role == QtCore.Qt.ForegroundRole and column == 0:
             return QtGui.QColor(46, 187, 209)
-        return super(FileItem, self).data(column, role)
+        return None
 
     @property
     def creation_date(self):
@@ -241,6 +240,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         self._rootItem = PathTreeItem("root", parent=None)
         self._items = {}
 
+        self.loadTree()
+
     def data(self, index, role):
         """
         Args:
@@ -250,12 +251,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QVariant()
 
-        if role != QtCore.Qt.DisplayRole:
-            return QtCore.QVariant()
-
         item = index.internalPointer()
 
-        return item.data(index.column())
+        return item.data(index.column(), role)
 
     def flags(self, index):
         """
@@ -403,11 +401,40 @@ class TreeView(QtGui.QTreeView):
     def __init__(self):
         """ """
         super(TreeView, self).__init__()
+        self.setHeader(_ColumnHeaderView(parent=self))
+
+    def setModel(self, model):
+        super(TreeView, self).setModel(model)
+        self.header().reset_column_sizes()
+
+
+OUTLINER_COLUMN_ORDER = ["Name", "Latest", "Time", "Size"]
+OUTLINER_COLUMN_WIDTHS = {"Name": 300, "Latest": 300, "Time": 200, "Size": 200}
+
+
+class _ColumnHeaderView(QtGui.QHeaderView):
+    def __init__(self, parent=None):
+        super(_ColumnHeaderView, self).__init__(
+            QtCore.Qt.Horizontal,
+            parent=parent
+        )
+
+        self.setStretchLastSection(True)
+
+    def reset_column_sizes(self):
+        """ Reset the columns to the default sizes.
+        """
+        for column_index, column_name in enumerate(OUTLINER_COLUMN_ORDER):
+            self.resizeSection(
+                column_index,
+                OUTLINER_COLUMN_WIDTHS[column_name]
+            )
+            self.showSection(column_index)
+            #self.setSectionResizeMode(column_index, self.Stretch)
 
 
 def get_folder_paths():
     """Find Houdini and User directory paths.
-
     Returns:
         paths (list(str)): Full directory paths.
     """
@@ -478,7 +505,10 @@ def _get_file_groups(file_paths):
         file_groups[key] = sorted(values)
     return file_groups, independent_files
 
-class openHipFile(QtGui.QDialog):
+HOUDINI = False
+
+
+class OpenHipFile(QtGui.QDialog):
     """This class represents a QtGui QDialog object."""
     def __init__(self, parent=None):
         """Construct dnHipOpen object.
@@ -489,9 +519,10 @@ class openHipFile(QtGui.QDialog):
         Args:
             parent (QtGui.QDialog): parent dialog
         """
-        super(openHipFile, self).__init__(parent)
+        super(OpenHipFile, self).__init__(parent)
 
         self._setup_ui()
+        self.resize(1100, 500)
 
     def _setup_ui(self):
         # set up title including show and shot info
@@ -508,15 +539,9 @@ class openHipFile(QtGui.QDialog):
         self._tree.setModel(self.model)
         # Alternate color between lines
         self._tree.setAlternatingRowColors(1)
-        # Set default minimum size for the widget
-        self._tree.setMinimumSize(800, 500)
-        column_sizes = {0: 300, 1: 300, 2: 150, 3: 200}
-        for column, size in column_sizes.items():
-            self._tree.setColumnWidth(column, size)
-        # Create mainn layout.
+
         self._layout = QtGui.QVBoxLayout()
         self._layout.addWidget(self._tree)
-        self.setLayout(self._layout)
 
         # Add Load and Import button on the bottom of UI
         self.load_button = QtGui.QPushButton("Load")
@@ -526,7 +551,8 @@ class openHipFile(QtGui.QDialog):
         button_layout.addWidget(self.load_button)
         button_layout.addWidget(self.import_button)
         # Add to main layout.
-        self._layout.addLayout(button_layout)
+        self._layout.addItem(button_layout)
+        self.setLayout(self._layout)
         # Set up connections.
         self._connect_widgets()
 
@@ -537,20 +563,54 @@ class openHipFile(QtGui.QDialog):
         self.load_button.clicked.connect(self.load_hip_file)
         self.import_button.clicked.connect(self.import_hip_file)
 
-        
+    def load_hip_file(self):
+        """Load file in scene."""
+        if not HOUDINI:
+            print "LOADING"
+            return
+
+        filepath = self.get_file_path()
+
+        user_confirmation = QtGui.QMessageBox.question(
+            self,
+            "Loading hip file",
+            "Are you sure you want to load {0}?".format(filepath),
+            QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel,
+        )
+        if user_confirmation == QtGui.QMessageBox.Yes and not filepath == "":
+            if os.path.isfile(filepath):
+                LOG.info("Selected file found... Loading -> %s", filepath)
+                #hou.hipFile.load(filepath)
+                self.close()
+            else:
+                error_message = "Selected file not found -> {0}".format(filepath)
+                LOG.error(error_message)
+                #hou.ui.displayMessage(error_message)
+
+    def import_hip_file(self):
+        """Import hip file in scene."""
+        if not HOUDINI:
+            print "IMPORTING"
+            return
+        filepath = self.get_file_path()
+        LOG.info("Merging selected file %s", filepath)
+        if not filepath == "":
+            if os.path.isfile(filepath):
+                LOG.warn("File found.. Merging -> %s", filepath)
+                #hou.hipFile.merge(filepath)
+                self.close()
+            else:
+                error_message = "Selected file not found -> {0}".format(filepath)
+                LOG.error(error_message)
+                #hou.ui.displayMessage(error_message)
+
+
 def run_this_thing():
     print " --- RUNNING ---"
     app = QtGui.QApplication([])
-    window = openHipFile()
+    window = OpenHipFile()
     window.show()
     app.exec_()
 
-#     view = TreeView()
-#     model = TreeModel()
-#     model.loadTree()
-#     view.setModel(model)
-#     view.show()
-
-    app.exec_()
 
 tree = run_this_thing()
