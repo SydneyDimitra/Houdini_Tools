@@ -6,12 +6,18 @@ import humanize
 import pendulum
 
 from PyQt4 import (QtCore, QtGui)
-# import hou
 
-# Initialise the LOG object
-LOG = logging.getLogger("simple example")
-#LOG = logging.getLogger("dnhou.{0}".format(__name__))
-LOG.setLevel(logging.INFO)
+# Temporary to help test in and out of houdini
+HOUDINI = False
+
+if HOUDINI:
+    import hou
+    # Initialise the LOG object
+    LOG = logging.getLogger("dnhou.{0}".format(__name__))
+else:
+    # Initialise the LOG object
+    LOG = logging.getLogger("simple example")
+    LOG.setLevel(logging.INFO)
 
 
 class PathTreeItem(object):
@@ -407,7 +413,7 @@ class TreeView(QtGui.QTreeView):
         super(TreeView, self).setModel(model)
         self.header().reset_column_sizes()
 
-
+# Define column names and sizes as globals
 OUTLINER_COLUMN_ORDER = ["Name", "Latest", "Time", "Size"]
 OUTLINER_COLUMN_WIDTHS = {"Name": 300, "Latest": 300, "Time": 200, "Size": 200}
 
@@ -451,6 +457,13 @@ def get_folder_paths():
 
 
 def get_contents(directory):
+    """Get contents for each directory.
+
+    Returns:
+        child_dir_paths(list(str)):
+        file_groups 
+        independent_files
+    """
     if os.path.isfile(directory):
         return ()
     if not os.path.exists(directory):
@@ -504,8 +517,6 @@ def _get_file_groups(file_paths):
     for key, values in file_groups.iteritems():
         file_groups[key] = sorted(values)
     return file_groups, independent_files
-
-HOUDINI = False
 
 
 class OpenHipFile(QtGui.QDialog):
@@ -580,12 +591,12 @@ class OpenHipFile(QtGui.QDialog):
         if user_confirmation == QtGui.QMessageBox.Yes and not filepath == "":
             if os.path.isfile(filepath):
                 LOG.info("Selected file found... Loading -> %s", filepath)
-                #hou.hipFile.load(filepath)
+                hou.hipFile.load(filepath)
                 self.close()
             else:
                 error_message = "Selected file not found -> {0}".format(filepath)
                 LOG.error(error_message)
-                #hou.ui.displayMessage(error_message)
+                hou.ui.displayMessage(error_message)
 
     def import_hip_file(self):
         """Import hip file in scene."""
@@ -597,12 +608,12 @@ class OpenHipFile(QtGui.QDialog):
         if not filepath == "":
             if os.path.isfile(filepath):
                 LOG.warn("File found.. Merging -> %s", filepath)
-                #hou.hipFile.merge(filepath)
+                hou.hipFile.merge(filepath)
                 self.close()
             else:
                 error_message = "Selected file not found -> {0}".format(filepath)
                 LOG.error(error_message)
-                #hou.ui.displayMessage(error_message)
+                hou.ui.displayMessage(error_message)
 
 
 def run_this_thing():
