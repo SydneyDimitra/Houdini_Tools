@@ -21,13 +21,14 @@ else:
 
 
 class PathTreeItem(object):
+    """The path TreeItem class. """
     def __init__(self, file_path, file_name=None, parent=None):
         """Construct a PathTreeItem object.
 
         Args:
             file_path (str): The full path of the file.
             file_name (str): The name of the file.
-            parent
+            parent (PathTreeItem object)
         """
         self.file_path = file_path
         self._file_name = file_name or os.path.basename(file_path)
@@ -65,7 +66,7 @@ class PathTreeItem(object):
         """Set is_loaded property.
 
         Args:
-            loaded(bool) : Boolean input to set the property
+            loaded (bool): Boolean input to set the property
         """
         self._is_loaded = loaded
 
@@ -75,8 +76,8 @@ class PathTreeItem(object):
     def data(self, column, role=QtCore.Qt.DisplayRole):
         """
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role ():
         """
         if role == QtCore.Qt.DisplayRole:
             return OUTLINER_COLUMN_ORDER[column]
@@ -87,7 +88,7 @@ class PathTreeItem(object):
         in the items list of child items.
         
         Args:
-            row(int): The row number.
+            row (int): The row number.
         """
         if (row < 0 or row >= len(self._children)):
             return None
@@ -119,7 +120,7 @@ class FolderItem(PathTreeItem):
     def data(self, column, role=QtCore.Qt.DisplayRole):
         """
         Args:
-            column(int): Column number.
+            column (int): Column number.
             role:
         """
         # Colouring the extra folders under the user folder for better
@@ -190,7 +191,7 @@ class FileItem(PathTreeItem):
 
         Args:
             file_path (str): Full path of file.
-            parent
+            parent ():
         """
         super(FileItem, self).__init__(file_path, parent=parent)
         self.date = None
@@ -201,8 +202,8 @@ class FileItem(PathTreeItem):
     def data(self, column, role=QtCore.Qt.DisplayRole):
         """
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role ():
         """
         if role == QtCore.Qt.DisplayRole:
             if column == 0:
@@ -240,8 +241,9 @@ class FileItem(PathTreeItem):
 
 
 class TreeModel(QtCore.QAbstractItemModel):
+    """The Tree Model Class."""
     def __init__(self):
-        """ """
+        """Construct TreeModel object."""
         super(TreeModel, self).__init__()
         self._rootItem = PathTreeItem("root", parent=None)
         self._items = {}
@@ -251,8 +253,8 @@ class TreeModel(QtCore.QAbstractItemModel):
     def data(self, index, role):
         """
         Args:
-            index
-            role
+            index ():
+            role ():
         """
         if not index.isValid():
             return QtCore.QVariant()
@@ -264,7 +266,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     def flags(self, index):
         """
         Args:
-            index
+            index ():
         """
         if not index.isValid():
             return QtCore.Qt.NoItemFlags
@@ -274,9 +276,9 @@ class TreeModel(QtCore.QAbstractItemModel):
     def headerData(self, section, orientation, role):
         """Return the data that we stored on the root item.
         Args:
-            section
-            orientation
-            role
+            section ():
+            orientation ():
+            role ():
         """
         if (orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole):
             return self._rootItem.data(section)
@@ -285,9 +287,9 @@ class TreeModel(QtCore.QAbstractItemModel):
     def index(self, row, column, parent):
         """
         Args:
-            row
-            column
-            parent
+            row ():
+            column ():
+            parent ():
         """
         # if not hasIndex(row, column, parent):
         #     return QtQui.QModelIndex()
@@ -306,7 +308,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     def parent(self, index):
         """
         Args:
-            index
+            index ():
         """
         if not index.isValid():
             return QtCore.QModelIndex()
@@ -324,7 +326,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         to a given model index, or the number of top-level items if an invalid
         index is specified.
         Args:
-            parent
+            parent ():
         """
         parentItem = None
         if parent.column() > 0:
@@ -405,7 +407,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 class TreeView(QtGui.QTreeView):
     def __init__(self):
-        """ """
+        """Construct TreeView object."""
         super(TreeView, self).__init__()
         self.setHeader(_ColumnHeaderView(parent=self))
 
@@ -420,6 +422,7 @@ OUTLINER_COLUMN_WIDTHS = {"Name": 300, "Latest": 300, "Time": 200, "Size": 200}
 
 class _ColumnHeaderView(QtGui.QHeaderView):
     def __init__(self, parent=None):
+        """Construct _ColumnHeaderView object."""      
         super(_ColumnHeaderView, self).__init__(
             QtCore.Qt.Horizontal,
             parent=parent
@@ -428,8 +431,7 @@ class _ColumnHeaderView(QtGui.QHeaderView):
         self.setStretchLastSection(True)
 
     def reset_column_sizes(self):
-        """ Reset the columns to the default sizes.
-        """
+        """ Reset the columns to the default sizes."""
         for column_index, column_name in enumerate(OUTLINER_COLUMN_ORDER):
             self.resizeSection(
                 column_index,
@@ -461,8 +463,8 @@ def get_contents(directory):
 
     Returns:
         child_dir_paths(list(str)):
-        file_groups 
-        independent_files
+        file_groups ():
+        independent_files ():
     """
     if os.path.isfile(directory):
         return ()
