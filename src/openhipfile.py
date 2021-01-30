@@ -21,13 +21,14 @@ else:
 
 
 class PathTreeItem(object):
+    """The path TreeItem class. """
     def __init__(self, file_path, file_name=None, parent=None):
         """Construct a PathTreeItem object.
 
         Args:
             file_path (str): The full path of the file.
             file_name (str): The name of the file.
-            parent
+            parent (PathTreeItem): The parent tree item.
         """
         self.file_path = file_path
         self._file_name = file_name or os.path.basename(file_path)
@@ -65,7 +66,7 @@ class PathTreeItem(object):
         """Set is_loaded property.
 
         Args:
-            loaded(bool) : Boolean input to set the property
+            loaded (bool): Boolean input to set the property
         """
         self._is_loaded = loaded
 
@@ -73,10 +74,10 @@ class PathTreeItem(object):
         self._contents = get_contents(self.file_path)
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        """
+        """Get data for each item, column and role.
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role (QtCore.Qt.ItemDataRole): The item data role.
         """
         if role == QtCore.Qt.DisplayRole:
             return OUTLINER_COLUMN_ORDER[column]
@@ -87,7 +88,7 @@ class PathTreeItem(object):
         in the items list of child items.
         
         Args:
-            row(int): The row number.
+            row (int): The row number.
         """
         if (row < 0 or row >= len(self._children)):
             return None
@@ -117,10 +118,10 @@ class FolderItem(PathTreeItem):
     """This class represents a folder tree item."""
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        """
+        """Get data for each item, column and role.
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role (QtCore.Qt.ItemDataRole): The item data role.
         """
         # Colouring the extra folders under the user folder for better
         # visibility (these include automated saved scene files that might
@@ -142,6 +143,7 @@ class FileGroupItem(PathTreeItem):
 
         Args:
             file_path (str): Full path of file.
+            parent (PathTreeItem): The parent tree item.
         """
         super(FileGroupItem, self).__init__(file_path, parent=parent)
         self.latest = None
@@ -160,10 +162,10 @@ class FileGroupItem(PathTreeItem):
         )[0]
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        """
+        """Get data for each item, column and role.
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role (QtCore.Qt.ItemDataRole): The item data role.
         """
         self.latest = self._get_latest()
         data = None
@@ -190,7 +192,7 @@ class FileItem(PathTreeItem):
 
         Args:
             file_path (str): Full path of file.
-            parent
+            parent (PathTreeItem): The parent tree item.
         """
         super(FileItem, self).__init__(file_path, parent=parent)
         self.date = None
@@ -199,10 +201,10 @@ class FileItem(PathTreeItem):
         self._evaluate_creation_date()
 
     def data(self, column, role=QtCore.Qt.DisplayRole):
-        """
+        """Get data for each item, column and role.
         Args:
-            column(int): Column number.
-            role:
+            column (int): Column number.
+            role (QtCore.Qt.ItemDataRole): The type of data queried.
         """
         if role == QtCore.Qt.DisplayRole:
             if column == 0:
@@ -240,8 +242,9 @@ class FileItem(PathTreeItem):
 
 
 class TreeModel(QtCore.QAbstractItemModel):
+    """The Tree Model Class."""
     def __init__(self):
-        """ """
+        """Construct TreeModel object."""
         super(TreeModel, self).__init__()
         self._rootItem = PathTreeItem("root", parent=None)
         self._items = {}
@@ -249,10 +252,10 @@ class TreeModel(QtCore.QAbstractItemModel):
         self.loadTree()
 
     def data(self, index, role):
-        """
+        """Get data for each item, column and role.
         Args:
-            index
-            role
+            index (QModelIndex): The item's index.
+            role (QtCore.Qt.ItemDataRole): The type of data queried.
         """
         if not index.isValid():
             return QtCore.QVariant()
@@ -262,9 +265,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         return item.data(index.column(), role)
 
     def flags(self, index):
-        """
+        """Set the required flags for each item on the model.
         Args:
-            index
+            index (QModelIndex): The item index.
         """
         if not index.isValid():
             return QtCore.Qt.NoItemFlags
@@ -274,20 +277,20 @@ class TreeModel(QtCore.QAbstractItemModel):
     def headerData(self, section, orientation, role):
         """Return the data that we stored on the root item.
         Args:
-            section
-            orientation
-            role
+            section ():
+            orientation (): 
+            role (QtCore.Qt.ItemDataRole): The item data role.
         """
         if (orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole):
             return self._rootItem.data(section)
         return QtCore.QVariant()
 
     def index(self, row, column, parent):
-        """
+        """Get item's index.
         Args:
-            row
-            column
-            parent
+            row ():
+            column ():
+            parent (PathTreeItem): The parent tree item.
         """
         # if not hasIndex(row, column, parent):
         #     return QtQui.QModelIndex()
@@ -306,7 +309,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     def parent(self, index):
         """
         Args:
-            index
+            index (QModelIndex): The index of item.
         """
         if not index.isValid():
             return QtCore.QModelIndex()
@@ -320,11 +323,11 @@ class TreeModel(QtCore.QAbstractItemModel):
         return self.createIndex(parentItem.row(), 0, parentItem)
 
     def rowCount(self, parent):
-        """Return the number of child items for the TreeItem that corresponds
+        """Return the number of child items for the PathTreeItem that corresponds
         to a given model index, or the number of top-level items if an invalid
         index is specified.
         Args:
-            parent
+            parent (PathTreeItem): The parent tree item.
         """
         parentItem = None
         if parent.column() > 0:
@@ -405,7 +408,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 class TreeView(QtGui.QTreeView):
     def __init__(self):
-        """ """
+        """Construct TreeView object."""
         super(TreeView, self).__init__()
         self.setHeader(_ColumnHeaderView(parent=self))
 
@@ -420,6 +423,7 @@ OUTLINER_COLUMN_WIDTHS = {"Name": 300, "Latest": 300, "Time": 200, "Size": 200}
 
 class _ColumnHeaderView(QtGui.QHeaderView):
     def __init__(self, parent=None):
+        """Construct _ColumnHeaderView object."""      
         super(_ColumnHeaderView, self).__init__(
             QtCore.Qt.Horizontal,
             parent=parent
@@ -428,8 +432,7 @@ class _ColumnHeaderView(QtGui.QHeaderView):
         self.setStretchLastSection(True)
 
     def reset_column_sizes(self):
-        """ Reset the columns to the default sizes.
-        """
+        """ Reset the columns to the default sizes."""
         for column_index, column_name in enumerate(OUTLINER_COLUMN_ORDER):
             self.resizeSection(
                 column_index,
@@ -460,9 +463,9 @@ def get_contents(directory):
     """Get contents for each directory.
 
     Returns:
-        child_dir_paths(list(str)):
-        file_groups 
-        independent_files
+        child_dir_paths (list(str)): The list of child paths that are directories.
+        file_groups (list(str)): The list of file groups.
+        independent_files (list(str)): The list of the independent files.
     """
     if os.path.isfile(directory):
         return ()
